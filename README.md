@@ -2,7 +2,7 @@
 
 A simple, privacy-focused dashboard to manually track your monthly income, expenses, and savings goals. This project was conceptualized and built in under 1 hours with the help of Google's Gemini.
 
-![Personal Finance Dashboard Screenshot](image_6616a6.png)
+![Personal Finance Dashboard Screenshot](dashboard.png)
 
 ---
 
