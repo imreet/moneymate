@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .progress-bar-bg {
+            background-color: #e5e7eb;
+        }
+        .progress-bar-fill {
+            background-color: #4f46e5;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">Personal Finance Dashboard</h1>
+            <p class="text-gray-600 mt-2">A simple, privacy-focused way to track your finances.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Forms and Summary -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- Summary Card -->
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4">Summary</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-500">Total Income</p>
+                            <p id="summary-income" class="text-2xl font-bold text-green-600">₹0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Total Expenses</p>
+                            <p id="summary-expenses" class="text-2xl font-bold text-red-600">₹0.00</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">Current Balance</p>
+                            <p id="summary-balance" class="text-2xl font-bold text-indigo-600">₹0.00</p>
+                        </div>
+                    </div>
+                    <button id="get-insights-btn" class="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                        Get Insights ✨
+                    </button>
+                </div>
+
+                <!-- Add Transaction Card -->
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4">Add Transaction</h2>
+                    <form id="transaction-form" class="space-y-4">
+                        <div>
+                            <label for="transaction-description" class="block text-sm font-medium text-gray-700">Description</label>
+                            <input type="text" id="transaction-description" placeholder="e.g., Groceries, Salary" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        </div>
+                        <div>
+                            <label for="transaction-amount" class="block text-sm font-medium text-gray-700">Unit Amount</label>
+                            <input type="number" id="transaction-amount" placeholder="0.00" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                        </div>
+                        <div>
+                            <label for="transaction-quantity" class="block text-sm font-medium text-gray-700">Quantity / Times (Optional)</label>
+                            <input type="number" id="transaction-quantity" placeholder="1" min="1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div>
+                            <label for="transaction-type" class="block text-sm font-medium text-gray-700">Type</label>
+                            <select id="transaction-type" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                                <option value="goal">Goal</option>
+                            </select>
+                        </div>
+                         <div id="category-wrapper">
+                            <label for="transaction-category" class="block text-sm font-medium text-gray-700">Category</label>
+                            <select id="transaction-category" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <option>Food</option>
+                                <option>Transport</option>
+                                <option>Utilities</option>
+                                <option>Entertainment</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div id="other-category-wrapper" class="hidden">
+                            <label for="other-category-input" class="block text-sm font-medium text-gray-700">Specify Category (Optional)</label>
+                            <input type="text" id="other-category-input" placeholder="e.g., Doctor's Visit" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <div id="goal-selector-wrapper" class="hidden">
+                            <label for="transaction-goal" class="block text-sm font-medium text-gray-700">Select Goal</label>
+                            <select id="transaction-goal" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <!-- Goal options will be populated here -->
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Add Transaction</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Middle Column: Transactions and Charts -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Income/Expense Chart -->
+                    <div class="card">
+                        <h2 class="text-2xl font-semibold mb-4">Income vs. Expenses</h2>
+                        <div class="relative h-64">
+                            <canvas id="incomeExpenseChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Expense Category Chart -->
+                    <div class="card">
+                        <h2 class="text-2xl font-semibold mb-4">Expense Categories</h2>
+                        <div class="relative h-64">
+                            <canvas id="expenseCategoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction List -->
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4">Recent Transactions</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Delete</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="transaction-list" class="bg-white divide-y divide-gray-200">
+                                <!-- Transaction rows will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Savings Goals Section -->
+                <div class="card">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                        <h2 class="text-2xl font-semibold">Savings Goals</h2>
+                        <button id="add-goal-btn" class="mt-4 md:mt-0 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">Add New Goal</button>
+                    </div>
+                    <div id="savings-goals-list" class="space-y-6">
+                        <!-- Savings goal items will be inserted here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for adding a new savings goal -->
+    <div id="goal-modal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="goal-form">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Set New Savings Goal</h3>
+                        <div class="mt-4 space-y-4">
+                            <div>
+                                <label for="goal-name" class="block text-sm font-medium text-gray-700">Goal Name</label>
+                                <input type="text" id="goal-name" placeholder="e.g., Vacation Fund" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                            </div>
+                            <div>
+                                <label for="goal-target" class="block text-sm font-medium text-gray-700">Target Amount</label>
+                                <input type="number" id="goal-target" placeholder="1000.00" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                            </div>
+                             <div>
+                                <label for="goal-saved" class="block text-sm font-medium text-gray-700">Amount Already Saved</label>
+                                <input type="number" id="goal-saved" placeholder="0.00" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Save Goal</button>
+                        <button type="button" id="cancel-goal-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for updating a savings goal -->
+    <div id="update-goal-modal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="update-goal-form">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Update Saved Amount</h3>
+                        <div class="mt-4">
+                            <label for="update-goal-saved" class="block text-sm font-medium text-gray-700">New Total Saved Amount</label>
+                            <input type="number" id="update-goal-saved" placeholder="0.00" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required>
+                            <input type="hidden" id="update-goal-index">
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Update Amount</button>
+                        <button type="button" id="cancel-update-goal-btn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for AI Insights -->
+    <div id="insights-modal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.636 6.364l-.707-.707M12 21v-1m-6.364-1.636l.707-.707" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Your Financial Insights ✨</h3>
+                            <div class="mt-4" id="insights-content-wrapper">
+                                <div id="insights-loader" class="flex justify-center items-center h-32">
+                                    <div class="spinner"></div>
+                                </div>
+                                <div id="insights-content" class="text-sm text-gray-600 space-y-2 prose max-w-none"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="close-insights-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            let goals = JSON.parse(localStorage.getItem('goals')) || [];
+
+            // --- DOM ELEMENTS ---
+            const transactionForm = document.getElementById('transaction-form');
+            const transactionList = document.getElementById('transaction-list');
+            const summaryIncome = document.getElementById('summary-income');
+            const summaryExpenses = document.getElementById('summary-expenses');
+            const summaryBalance = document.getElementById('summary-balance');
+            const transactionTypeSelect = document.getElementById('transaction-type');
+            const categoryWrapper = document.getElementById('category-wrapper');
+            const transactionCategorySelect = document.getElementById('transaction-category');
+            const otherCategoryWrapper = document.getElementById('other-category-wrapper');
+            const otherCategoryInput = document.getElementById('other-category-input');
+            const goalSelectorWrapper = document.getElementById('goal-selector-wrapper');
+            const transactionGoalSelect = document.getElementById('transaction-goal');
+
+            // Add Goal Modal Elements
+            const goalModal = document.getElementById('goal-modal');
+            const addGoalBtn = document.getElementById('add-goal-btn');
+            const cancelGoalBtn = document.getElementById('cancel-goal-btn');
+            const goalForm = document.getElementById('goal-form');
+            const savingsGoalsList = document.getElementById('savings-goals-list');
+            
+            // Update Goal Modal Elements
+            const updateGoalModal = document.getElementById('update-goal-modal');
+            const updateGoalForm = document.getElementById('update-goal-form');
+            const cancelUpdateGoalBtn = document.getElementById('cancel-update-goal-btn');
+            const updateGoalSavedInput = document.getElementById('update-goal-saved');
+            const updateGoalIndexInput = document.getElementById('update-goal-index');
+
+            // Insights Modal Elements
+            const insightsModal = document.getElementById('insights-modal');
+            const getInsightsBtn = document.getElementById('get-insights-btn');
+            const closeInsightsBtn = document.getElementById('close-insights-btn');
+            const insightsLoader = document.getElementById('insights-loader');
+            const insightsContent = document.getElementById('insights-content');
+
+
+            // --- CHART INSTANCES ---
+            let incomeExpenseChart, expenseCategoryChart;
+
+            // --- FUNCTIONS ---
+
+            const saveData = () => {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+                localStorage.setItem('goals', JSON.stringify(goals));
+            };
+
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+            };
+
+            const renderTransactions = () => {
+                transactionList.innerHTML = '';
+                if (transactions.length === 0) {
+                    transactionList.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">No transactions yet.</td></tr>`;
+                    return;
+                }
+                transactions.forEach((tx, index) => {
+                    const row = document.createElement('tr');
+                    let bgColor = 'bg-white';
+                    if (tx.type === 'income') bgColor = 'bg-green-50';
+                    if (tx.type === 'expense') bgColor = 'bg-red-50';
+                    if (tx.type === 'goal') bgColor = 'bg-indigo-50';
+                    
+                    row.className = bgColor;
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${tx.description}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatCurrency(tx.unitAmount)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${tx.quantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-semibold">${formatCurrency(tx.amount)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${tx.type === 'income' ? 'text-green-600' : tx.type === 'expense' ? 'text-red-600' : 'text-indigo-600'}">${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${tx.category || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="text-red-600 hover:text-red-900" data-index="${index}">Delete</button>
+                        </td>
+                    `;
+                    transactionList.appendChild(row);
+                });
+            };
+
+            const updateSummary = () => {
+                const income = transactions.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
+                const expenses = transactions.filter(tx => tx.type === 'expense' || tx.type === 'goal').reduce((sum, tx) => sum + tx.amount, 0);
+                const balance = income - expenses;
+
+                summaryIncome.textContent = formatCurrency(income);
+                summaryExpenses.textContent = formatCurrency(expenses);
+                summaryBalance.textContent = formatCurrency(balance);
+            };
+            
+            const renderGoalOptions = () => {
+                transactionGoalSelect.innerHTML = '';
+                if (goals.length > 0) {
+                    goals.forEach((goal, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = goal.name;
+                        transactionGoalSelect.appendChild(option);
+                    });
+                } else {
+                    const option = document.createElement('option');
+                    option.textContent = 'No goals available';
+                    option.disabled = true;
+                    transactionGoalSelect.appendChild(option);
+                }
+            };
+
+            const renderGoals = () => {
+                savingsGoalsList.innerHTML = '';
+                 if (goals.length === 0) {
+                    savingsGoalsList.innerHTML = `<p class="text-center py-4 text-gray-500">No savings goals set yet.</p>`;
+                    return;
+                }
+                goals.forEach((goal, index) => {
+                    const progress = goal.target > 0 ? Math.min((goal.saved / goal.target) * 100, 100) : 0;
+                    const goalEl = document.createElement('div');
+                    goalEl.className = 'border border-gray-200 p-4 rounded-lg';
+                    goalEl.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-lg font-semibold text-gray-800">${goal.name}</h3>
+                            <div>
+                                <button class="text-indigo-600 hover:text-indigo-900 text-sm font-medium mr-3" data-update-goal-index="${index}">Update</button>
+                                <button class="text-red-500 hover:text-red-700 text-sm font-medium" data-delete-goal-index="${index}">Delete</button>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">${formatCurrency(goal.saved)} / ${formatCurrency(goal.target)}</p>
+                        <div class="w-full progress-bar-bg rounded-full h-4 mt-2">
+                            <div class="progress-bar-fill h-4 rounded-full" style="width: ${progress}%;"></div>
+                        </div>
+                        <p class="text-right text-sm font-medium mt-1">${progress.toFixed(2)}%</p>
+                    `;
+                    savingsGoalsList.appendChild(goalEl);
+                });
+            };
+
+            const updateCharts = () => {
+                const income = transactions.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
+                const expenses = transactions.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + tx.amount, 0);
+                const goalContributions = transactions.filter(tx => tx.type === 'goal').reduce((sum, tx) => sum + tx.amount, 0);
+
+                const incomeExpenseData = {
+                    labels: ['Income', 'Expenses', 'Goal Savings'],
+                    datasets: [{
+                        label: 'Amount',
+                        data: [income, expenses, goalContributions],
+                        backgroundColor: ['#10B981', '#EF4444', '#4f46e5'],
+                    }]
+                };
+                if (incomeExpenseChart) incomeExpenseChart.destroy();
+                incomeExpenseChart = new Chart(document.getElementById('incomeExpenseChart'), {
+                    type: 'bar',
+                    data: incomeExpenseData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { callback: value => formatCurrency(value) } } }
+                    }
+                });
+
+                const expenseCategories = transactions
+                    .filter(tx => tx.type === 'expense')
+                    .reduce((acc, tx) => {
+                        acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+                        return acc;
+                    }, {});
+
+                const categoryLabels = Object.keys(expenseCategories);
+                const categoryData = Object.values(expenseCategories);
+                
+                const expenseCategoryChartData = {
+                    labels: categoryLabels.length > 0 ? categoryLabels : ['No Expenses'],
+                    datasets: [{
+                        data: categoryData.length > 0 ? categoryData : [1],
+                        backgroundColor: ['#f97316', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#6b7280'],
+                    }]
+                };
+
+                if (expenseCategoryChart) expenseCategoryChart.destroy();
+                expenseCategoryChart = new Chart(document.getElementById('expenseCategoryChart'), {
+                    type: 'pie',
+                    data: expenseCategoryChartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'top' },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) { label += ': '; }
+                                        if (context.parsed !== null) { label += formatCurrency(context.parsed); }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const refreshUI = () => {
+                renderTransactions();
+                updateSummary();
+                renderGoals();
+                renderGoalOptions();
+                updateCharts();
+                saveData();
+            };
+
+            const getFinancialInsights = async () => {
+                insightsModal.classList.remove('hidden');
+                insightsLoader.classList.remove('hidden');
+                insightsContent.classList.add('hidden');
+                insightsContent.innerHTML = '';
+
+                if (transactions.length === 0) {
+                    insightsContent.innerHTML = "<p>You don't have any transactions yet. Add some income and expenses to get your first financial insights!</p>";
+                    insightsLoader.classList.add('hidden');
+                    insightsContent.classList.remove('hidden');
+                    return;
+                }
+
+                const income = transactions.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + tx.amount, 0);
+                const expenseItems = transactions.filter(tx => tx.type === 'expense');
+                const totalExpenses = expenseItems.reduce((sum, tx) => sum + tx.amount, 0);
+                const goalContributions = transactions.filter(tx => tx.type === 'goal').reduce((sum, tx) => sum + tx.amount, 0);
+
+                const expenseByCategory = expenseItems.reduce((acc, tx) => {
+                    acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+                    return acc;
+                }, {});
+
+                let prompt = `As a friendly financial advisor, analyze the following financial data for a user in India (currency is INR). Provide a brief, actionable, and encouraging summary.
+
+                Financial Summary:
+                - Total Monthly Income: ${formatCurrency(income)}
+                - Total Monthly Expenses: ${formatCurrency(totalExpenses)}
+                - Total Saved Towards Goals: ${formatCurrency(goalContributions)}
+
+                Expense Breakdown:
+                ${Object.entries(expenseByCategory).map(([cat, amt]) => `- ${cat}: ${formatCurrency(amt)}`).join('\n')}
+
+                Savings Goals:
+                ${goals.map(g => `- Goal "${g.name}": ${formatCurrency(g.saved)} saved towards ${formatCurrency(g.target)}`).join('\n') || '- No active savings goals.'}
+
+                Please provide insights covering:
+                1. A quick overview of their financial health (e.g., income vs. expenses).
+                2. Identify the top 1-2 spending categories and offer a simple, practical tip for each.
+                3. Give some encouragement regarding their savings goals.
+                
+                Keep the tone positive and use Markdown for formatting (like bolding and bullet points).`;
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = "AIzaSyA6qle0Uv9LDZI5ahOXjGLYcDTtucYALWc"; // API key is handled by the environment
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        insightsContent.innerHTML = text.replace(/\n/g, '<br>'); // Basic markdown support
+                    } else {
+                        throw new Error("Received an empty or invalid response from the API.");
+                    }
+                } catch (error) {
+                    console.error("Error fetching insights:", error);
+                    insightsContent.innerHTML = "<p class='text-red-500'>Sorry, I couldn't fetch your financial insights at the moment. Please try again later.</p>";
+                } finally {
+                    insightsLoader.classList.add('hidden');
+                    insightsContent.classList.remove('hidden');
+                }
+            };
+
+
+            // --- EVENT LISTENERS ---
+
+            transactionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const description = document.getElementById('transaction-description').value;
+                const unitAmount = parseFloat(document.getElementById('transaction-amount').value);
+                const quantity = parseInt(document.getElementById('transaction-quantity').value) || 1;
+                const type = document.getElementById('transaction-type').value;
+                const totalAmount = unitAmount * quantity;
+                
+                let category = null;
+
+                if (type === 'expense') {
+                    let selectedCategory = transactionCategorySelect.value;
+                    if (selectedCategory === 'Other') {
+                        category = otherCategoryInput.value.trim() || 'Other';
+                    } else {
+                        category = selectedCategory;
+                    }
+                    transactions.push({ description, unitAmount, quantity, amount: totalAmount, type, category });
+                } else if (type === 'income') {
+                    transactions.push({ description, unitAmount, quantity, amount: totalAmount, type, category: 'Income' });
+                } else if (type === 'goal') {
+                    const goalIndex = transactionGoalSelect.value;
+                    if (goalIndex !== '' && goals[goalIndex]) {
+                        goals[goalIndex].saved += totalAmount;
+                        category = goals[goalIndex].name;
+                        transactions.push({ description, unitAmount, quantity, amount: totalAmount, type, category });
+                    } else {
+                        alert("Please select a valid goal.");
+                        return;
+                    }
+                }
+                
+                transactionForm.reset();
+                transactionTypeSelect.dispatchEvent(new Event('change'));
+                refreshUI();
+            });
+
+            transactionList.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON' && e.target.dataset.index) {
+                    const index = e.target.dataset.index;
+                    const tx = transactions[index];
+                    
+                    if (tx.type === 'goal') {
+                        const goal = goals.find(g => g.name === tx.category);
+                        if (goal) {
+                            goal.saved -= tx.amount;
+                        }
+                    }
+
+                    transactions.splice(index, 1);
+                    refreshUI();
+                }
+            });
+
+            transactionCategorySelect.addEventListener('change', (e) => {
+                if (e.target.value === 'Other') {
+                    otherCategoryWrapper.classList.remove('hidden');
+                } else {
+                    otherCategoryWrapper.classList.add('hidden');
+                }
+            });
+
+            transactionTypeSelect.addEventListener('change', (e) => {
+                const type = e.target.value;
+                if (type === 'expense') {
+                    categoryWrapper.classList.remove('hidden');
+                    goalSelectorWrapper.classList.add('hidden');
+                    transactionCategorySelect.dispatchEvent(new Event('change'));
+                } else if (type === 'goal') {
+                    categoryWrapper.classList.add('hidden');
+                    otherCategoryWrapper.classList.add('hidden');
+                    goalSelectorWrapper.classList.remove('hidden');
+                } else { // Income
+                    categoryWrapper.classList.add('hidden');
+                    otherCategoryWrapper.classList.add('hidden');
+                    goalSelectorWrapper.classList.add('hidden');
+                }
+            });
+            
+            // --- GOAL MODAL LOGIC ---
+            addGoalBtn.addEventListener('click', () => goalModal.classList.remove('hidden'));
+            cancelGoalBtn.addEventListener('click', () => goalModal.classList.add('hidden'));
+            
+            goalForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const name = document.getElementById('goal-name').value;
+                const target = parseFloat(document.getElementById('goal-target').value);
+                const saved = parseFloat(document.getElementById('goal-saved').value) || 0;
+                
+                goals.push({ name, target, saved });
+                goalForm.reset();
+                goalModal.classList.add('hidden');
+                refreshUI();
+            });
+
+            savingsGoalsList.addEventListener('click', (e) => {
+                const deleteIndex = e.target.dataset.deleteGoalIndex;
+                const updateIndex = e.target.dataset.updateGoalIndex;
+
+                if(deleteIndex !== undefined) {
+                    goals.splice(deleteIndex, 1);
+                    refreshUI();
+                }
+
+                if(updateIndex !== undefined) {
+                    const goal = goals[updateIndex];
+                    updateGoalSavedInput.value = goal.saved;
+                    updateGoalIndexInput.value = updateIndex;
+                    updateGoalModal.classList.remove('hidden');
+                }
+            });
+
+            // --- UPDATE GOAL MODAL LOGIC ---
+            cancelUpdateGoalBtn.addEventListener('click', () => {
+                updateGoalModal.classList.add('hidden');
+            });
+
+            updateGoalForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const index = updateGoalIndexInput.value;
+                const newSavedAmount = parseFloat(updateGoalSavedInput.value);
+
+                if (index !== '' && !isNaN(newSavedAmount) && goals[index]) {
+                    goals[index].saved = newSavedAmount;
+                }
+
+                updateGoalForm.reset();
+                updateGoalModal.classList.add('hidden');
+                refreshUI();
+            });
+
+            // --- INSIGHTS MODAL LOGIC ---
+            getInsightsBtn.addEventListener('click', getFinancialInsights);
+            closeInsightsBtn.addEventListener('click', () => insightsModal.classList.add('hidden'));
+
+
+            // --- INITIALIZATION ---
+            transactionTypeSelect.dispatchEvent(new Event('change'));
+            refreshUI();
+        });
+    </script>
+</body>
+</html>
